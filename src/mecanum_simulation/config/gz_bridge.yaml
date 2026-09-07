@@ -1,0 +1,27 @@
+# ros_gz_bridge topic listesi — YALNIZ Gazebo-native veri icin.
+# /cmd_vel, /tf, /joint_states, controller odometry BURADA KOPRULENMEZ:
+# bunlar ros2_control/mecanum_drive_controller/EKF zincirinde ROS-native kalir.
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/scan"
+  gz_topic_name: "/scan"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/imu/data_raw"
+  gz_topic_name: "/imu/data_raw"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  direction: GZ_TO_ROS
+
+# Yalniz test/metrik icin: Nav2/EKF bu topic'i TUKETMEZ.
+- ros_topic_name: "/ground_truth/odom"
+  gz_topic_name: "/model/mecanum_robot/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  direction: GZ_TO_ROS

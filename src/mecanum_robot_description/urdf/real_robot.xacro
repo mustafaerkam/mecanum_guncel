@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- Ince gercek-robot ust-xacro: ortak govde + gercek ros2_control
+     (ESP32 micro-ROS tasima katmani). -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mecanum_robot">
+
+  <xacro:arg name="transport" default="mock"/>
+  <xacro:arg name="command_topic" default="wheel/commands"/>
+  <xacro:arg name="state_topic" default="wheel/states"/>
+  <xacro:arg name="feedback_mode" default="required"/>
+
+  <xacro:include filename="$(find mecanum_robot_description)/urdf/mecanum_robot.xacro"/>
+  <xacro:include filename="$(find mecanum_control)/urdf/ros2_control_real.xacro"/>
+
+  <xacro:mecanum_ros2_control_real
+    transport="$(arg transport)"
+    command_topic="$(arg command_topic)"
+    state_topic="$(arg state_topic)"
+    feedback_mode="$(arg feedback_mode)"/>
+
+</robot>

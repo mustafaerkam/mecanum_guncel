@@ -1,0 +1,21 @@
+twist_mux:
+  ros__parameters:
+    use_sim_time: true
+    # cmd_vel_selected uzerine yazan tum kaynaklar. Teleop Nav2'den daha
+    # yuksek oncelikli (locked karar: "Teleop Nav2'den daha yuksek
+    # oncelikli olabilir"). Kesin timeout/priority sayilari gercek guvenlik
+    # gereksinimi/kullanici geri bildirimiyle netlesmeden nominal kabul edilir.
+    topics:
+      navigation:
+        topic: cmd_vel_nav
+        timeout: 0.5
+        priority: 10
+      teleop:
+        topic: cmd_vel_teleop
+        timeout: 0.5
+        priority: 100
+    # locks KASITLI OLARAK YOK: bos tipli liste ("locks: []") rclcpp parametre
+    # bildiriminde tip cikarilamadigi icin cokuyordu (headless testte
+    # InvalidParameterValueException ile bulundu). Kilit gerektiginde
+    # (fiziksel E-stop/ESP watchdog disinda ayrica yazilimsal kilit istenirse)
+    # en az bir gercek girdiyle birlikte eklenecek.

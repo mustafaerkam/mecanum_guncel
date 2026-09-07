@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mecanum_control</name>
+  <version>0.1.0</version>
+  <description>Mecanum ortak ros2_control konfigürasyonu (sim + gerçek), controller spawner launch ve ESP32 micro-ROS hardware_interface::SystemInterface</description>
+
+  <maintainer email="esat@example.com">Esat</maintainer>
+  <license>Proprietary</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>std_msgs</depend>
+  <depend>controller_manager</depend>
+
+  <exec_depend>ros2_control</exec_depend>
+  <exec_depend>ros2controlcli</exec_depend>
+  <exec_depend>ros2_controllers</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>mecanum_drive_controller</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

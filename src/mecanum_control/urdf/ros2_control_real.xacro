@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Gercek robot ros2_control blogu: mecanum_control/MecanumSystemInterface.
+       Teker hiz komutlari ESP32 uzerindeki micro-ROS node'una topic ile gider
+       (USB seri + micro_ros_agent). Sim ile AYNI dort joint command/state
+       interface seti (bkz. ros2_control_sim.xacro).
+
+       transport:
+         mock      -> donanimsiz test (varsayilan, guvenli, motor hareketsiz)
+         micro_ros -> gercek ESP32
+
+       feedback_mode:
+         required  -> ESP teker durumu gelmezse aktivasyon/okuma hata verir
+         open_loop -> firmware hazir degilken komut zincirini surmek icin;
+                      odometri GERCEK DEGILDIR -->
+  <xacro:macro name="mecanum_ros2_control_real"
+               params="transport:='mock'
+                       command_topic:='wheel/commands'
+                       state_topic:='wheel/states'
+                       feedback_mode:='required'
+                       qos_reliability:='best_effort'
+                       state_timeout:='0.2'
+                       activation_timeout:='5.0'">
+    <ros2_control name="MecanumSystem" type="system">
+      <hardware>
+        <plugin>mecanum_control/MecanumSystemInterface</plugin>
+        <param name="transport">${transport}</param>
+        <param name="command_topic">${command_topic}</param>
+        <param name="state_topic">${state_topic}</param>
+        <param name="feedback_mode">${feedback_mode}</param>
+        <param name="qos_reliability">${qos_reliability}</param>
+        <param name="state_timeout">${state_timeout}</param>
+        <param name="activation_timeout">${activation_timeout}</param>
+        <!-- {FL, FR, RL, RR} yuva sirasi. Topic'teki dizi sirasi budur. -->
+        <param name="wheel_joints">wheel_fl_joint,wheel_fr_joint,wheel_rl_joint,wheel_rr_joint</param>
+      </hardware>
+      <joint name="wheel_fl_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="wheel_fr_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="wheel_rl_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="wheel_rr_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+  </xacro:macro>
+
+</robot>

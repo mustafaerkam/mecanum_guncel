@@ -1,0 +1,222 @@
+<?xml version="1.0" ?>
+<!--
+  ═══════════════════════════════════════════════════════════════
+  KATMAN 0 — Basit Kapali Oda (6m x 6m)
+  ═══════════════════════════════════════════════════════════════
+  Amac: SLAM + Nav2 pipeline'ini en sade ortamda dogrulamak.
+        Karmasiklik yok, boylece bir sorun cikarsa "algoritma mi
+        yanlis, ortam mi zor" ikilemi olusmaz.
+
+  Tasarim notlari:
+   - Oda ic olculeri: 6m x 6m (RPLIDAR A1'in 6m menzili icin ideal;
+     robot ortadayken tum duvarlari gorebilir)
+   - Duvar yuksekligi: 1.0m (LiDAR yuksekligi ~0.35m, rahatca gorur)
+   - Duvar kalinligi: 0.15m
+   - Kose referansi icin bir ic sutun eklendi (loop closure'i
+     kolaylastirir, SLAM'e ayirt edici ozellik verir)
+  ═══════════════════════════════════════════════════════════════
+-->
+<sdf version="1.7">
+  <world name="katman0_oda">
+
+    <!-- ─── Sistem eklentileri (Fortress isimlendirmesi) ─── -->
+    <plugin filename="ignition-gazebo-physics-system"
+            name="ignition::gazebo::systems::Physics"/>
+    <plugin filename="ignition-gazebo-user-commands-system"
+            name="ignition::gazebo::systems::UserCommands"/>
+    <plugin filename="ignition-gazebo-scene-broadcaster-system"
+            name="ignition::gazebo::systems::SceneBroadcaster"/>
+    <plugin filename="ignition-gazebo-sensors-system"
+            name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="ignition-gazebo-imu-system"
+            name="ignition::gazebo::systems::Imu"/>
+    <plugin filename="ignition-gazebo-contact-system"
+            name="ignition::gazebo::systems::Contact"/>
+
+    <!-- ─── Fizik ve ortam ─── -->
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <sky/>
+    </scene>
+
+    <light type="directional" name="sun">
+      <direction>-0.5 0.1 -0.9</direction>
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+    </light>
+
+    <!-- ═══════════════ ZEMIN ═══════════════ -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════ DUVARLAR ═══════════════
+         Oda merkezi (0,0). Ic olcu 6x6m, yani duvarlar
+         +/-3m'de. Duvar kalinligi 0.15m oldugu icin duvar
+         merkezleri 3.075m'de (3 + 0.15/2).
+         ════════════════════════════════════════ -->
+
+    <!-- KUZEY duvari (+Y yonu) -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 3.075 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box><size>6.3 0.15 1.0</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>6.3 0.15 1.0</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.65 1</ambient>
+            <diffuse>0.7 0.7 0.75 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- GUNEY duvari (-Y yonu) -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -3.075 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box><size>6.3 0.15 1.0</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>6.3 0.15 1.0</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.65 1</ambient>
+            <diffuse>0.7 0.7 0.75 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- DOGU duvari (+X yonu) -->
+    <model name="wall_east">
+      <static>true</static>
+      <pose>3.075 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box><size>0.15 6.0 1.0</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.15 6.0 1.0</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.65 1</ambient>
+            <diffuse>0.7 0.7 0.75 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- BATI duvari (-X yonu) -->
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-3.075 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box><size>0.15 6.0 1.0</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.15 6.0 1.0</size></box>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.65 1</ambient>
+            <diffuse>0.7 0.7 0.75 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ═══════════════ IC REFERANS SUTUNU ═══════════════
+         Neden var: Tamamen bos dikdortgen oda, SLAM icin
+         "ozelliksiz" bir ortamdir — her duvar birbirine benzer,
+         robot konumunu ayirt etmekte zorlanabilir. Merkez disi
+         bir sutun, taramaya ayirt edici bir imza katar ve
+         loop closure'i belirgin sekilde kolaylastirir.
+         Ayrica Nav2'nin engelden kacinma davranisini test etmek
+         icin de basit bir hedef saglar.
+         ═══════════════════════════════════════════════════ -->
+    <model name="pillar_center">
+      <static>true</static>
+      <pose>1.2 -1.2 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.25</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.25</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0.7 0.35 0.2 1</ambient>
+            <diffuse>0.8 0.4 0.25 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

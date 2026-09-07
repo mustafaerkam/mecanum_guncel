@@ -1,0 +1,425 @@
+# ═══════════════════════════════════════════════════════════════
+#  Nav2 parametreleri — MECANUM (HOLONOMIC) robot icin
+#  Standart diff-drive'dan farkli olan yerler yorumlarda belirtildi.
+# ═══════════════════════════════════════════════════════════════
+
+amcl:
+  ros__parameters:
+    use_sim_time: true
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    base_frame_id: "base_footprint"
+    global_frame_id: "map"
+    odom_frame_id: "odom"
+    scan_topic: /scan
+    # HOLONOMIC: omni hareket modeli
+    robot_model_type: "nav2_amcl::OmniMotionModel"
+    max_particles: 2000
+    min_particles: 500
+    laser_max_range: 12.0
+    laser_min_range: 0.15
+    max_beams: 60
+    pf_err: 0.05
+    pf_z: 0.99
+    update_min_a: 0.2
+    update_min_d: 0.25
+    resample_interval: 1
+    transform_tolerance: 1.0
+    do_beamskip: false
+    tf_broadcast: true
+    set_initial_pose: false   # KRITIK: RViz "2D Pose Estimate" ile manuel baslangic (kilitli karar)
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: true
+    global_frame: map
+    robot_base_frame: base_footprint
+    odom_topic: odometry/filtered   # EKF ciktisi, ham Gazebo/controller odom degil
+    bt_loop_duration: 10
+    default_server_timeout: 20
+
+controller_server:
+  ros__parameters:
+    use_sim_time: true
+    controller_frequency: 20.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001    # HOLONOMIC: y eksenini de dinle
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+
+    general_goal_checker:
+      stateful: True
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+
+    # ── MPPI Controller: holonomik hareketi dogal destekler ──
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      time_steps: 56
+      model_dt: 0.05
+      batch_size: 2000
+      vx_std: 0.2
+      # MPPI yorunge ornekleminin yanal eksendeki standart sapmasi.
+      # 0.2 -> 0.05 (2026-08-25): 0.2'de duz koridorda bile aday
+      # yorungelerin buyuk kismi yanal bilesen tasiyor ve robot egik
+      # ilerliyordu. 0.05'te yanal hareket YOK OLMAZ (vy_max 0.5 duruyor),
+      # yalnizca gercekten gerektiginde secilir.
+      vy_std: 0.05              # HOLONOMIC: yanal hiz sapmasi > 0
+      wz_std: 0.4
+      vx_max: 0.5
+      vx_min: -0.5              # HOLONOMIC: geri de gidebilir
+      vy_max: 0.5               # HOLONOMIC: yana kayabilir
+      wz_max: 1.2               # motor tavani 1.48 rad/s (82rpm/0.94); doygunluk marji
+      motion_model: "Omni"     # HOLONOMIC: kritik! diff-drive degil
+      # visualize: MPPI'nin aday yorunge demetini yayinlar. GORSEL OLARAK
+      # etkileyici ama EN PAHALI tek ayar: batch_size 2000 / trajectory_step 5
+      # ile her donguden ~400 yorunge, controller_frequency 20 Hz'de saniyede
+      # ~8000 yorunge mesaji. CPU + DDS + RViz uclu yuk.
+      # false: Gazebo GUI acikken makine doygunlasip "Control loop missed its
+      # desired rate of 20.0000Hz" uretiyor ve Nav2 hedefi tamamlayamiyordu
+      # (ayni hedef headless'ta 0 recovery ile geciyor). Demeti gormek
+      # isterseniz true yapin.
+      visualize: false
+      TrajectoryVisualizer:
+        trajectory_step: 5
+        time_step: 3
+      critics: ["ConstraintCritic", "CostCritic", "GoalCritic",
+                "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic",
+                "PathAngleCritic", "PreferForwardCritic"]
+      ConstraintCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 4.0
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.4
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.5
+      PreferForwardCritic:
+        enabled: true
+        cost_power: 1
+        # 5.0 -> 20.0 (2026-08-25). DIKKAT: bu kritik GERI hareketi
+        # (negatif vx) cezalandirir, YANAL hareketi degil. Saf strafe'te
+        # vx ~ 0 oldugu icin bu kritik ceza uretmez. Yan yan gitmeyi
+        # dogrudan etkileyen kritik PathAngleCritic'tir (govde yonu ile
+        # yol yonu arasindaki aciyi cezalandirir, su an cost_weight 2.0).
+        cost_weight: 20.0
+        threshold_to_consider: 0.5
+      CostCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.81
+        critical_cost: 300.0
+        consider_footprint: true
+        collision_cost: 1000000.0
+        near_goal_distance: 1.0
+      PathAlignCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 14.0
+        max_path_occupancy_ratio: 0.05
+        trajectory_point_step: 4
+        threshold_to_consider: 0.5
+        offset_from_furthest: 20
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_furthest: 5
+        threshold_to_consider: 1.4
+      PathAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 2.0
+        offset_from_furthest: 4
+        threshold_to_consider: 0.5
+
+planner_server:
+  ros__parameters:
+    use_sim_time: true
+    planner_plugins: ["GridBased"]
+    # SmacPlanner2D (kilitli karar). Plugin id kurulu Humble'da
+    # /opt/ros/humble/share/nav2_smac_planner/smac_plugin_2d.xml'den dogrulandi.
+    GridBased:
+      plugin: "nav2_smac_planner/SmacPlanner2D"
+      tolerance: 0.5
+      downsample_costmap: false
+      allow_unknown: true
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 2.0
+      # D: maliyeti yol uzunluguna karsi ne kadar tarttigi. 2.0 -> 3.5:
+      # global yol koridorun ORTASINDAN gecer, duvara yaslanmaz.
+      # A (inflation) ile birlikte calisir: A gradyani uretir, D onu
+      # global planlamada agirlastirir.
+      cost_travel_multiplier: 3.5
+      use_final_approach_orientation: false
+      smooth_path: true
+
+smoother_server:
+  ros__parameters:
+    use_sim_time: true
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+      do_refinement: True
+
+behavior_server:
+  ros__parameters:
+    use_sim_time: true
+    local_costmap_topic: local_costmap/costmap_raw
+    global_costmap_topic: global_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_footprint_topic: global_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    # NOT: pluginlib lookup name'i "paket/Sinif" formatindadir, C++ namespace
+    # ("nav2_behaviors::Spin") DEGIL — headless testte bu hata yakalandi ve
+    # duzeltildi (/opt/ros/humble/share/nav2_behaviors/behavior_plugin.xml).
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    assisted_teleop:
+      plugin: "nav2_behaviors/AssistedTeleop"
+    local_frame: odom
+    global_frame: map
+    robot_base_frame: base_footprint
+    transform_tolerance: 0.1
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.0
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 3.2
+
+# ══════════════ GLOBAL COSTMAP ══════════════
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: true
+      global_frame: map
+      robot_base_frame: base_footprint
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      resolution: 0.05
+      track_unknown_space: true
+      # Robot ayak izi (footprint) - govde 1.0x0.7 m + teker collision kurelerinin
+      # dis zarfi: x=0.40+0.1625, y=0.54+0.1625.
+      # inscribed radius = 0.5625 -> costmap bu bandi INSCRIBED_INFLATED_OBSTACLE yapar.
+      footprint: "[ [0.5625, 0.7025], [0.5625, -0.7025], [-0.5625, -0.7025], [-0.5625, 0.7025] ]"
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          data_type: "LaserScan"
+          raytrace_max_range: 12.0
+          obstacle_max_range: 11.5
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: true
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        # A: duvarlardan YARIM ARAC GENISLIGI (0.70 m) uzak durma hedefi.
+        # Robot 1.125 x 1.405 m; yari-genislik 0.7025. Govde kenarindan
+        # 0.70 m bosluk istemek => merkez-engel mesafesi >= 1.405 m.
+        #
+        # Nav2 inflation maliyeti:  cost = 252 * exp(-cost_scaling_factor * (d - inscribed))
+        # inscribed = 0.5625 oldugundan d = 1.405'te:
+        #     cost_scaling_factor 3.0 -> maliyet  20  (neredeyse sifir, itmiyor)
+        #     cost_scaling_factor 1.5 -> maliyet  71
+        #     cost_scaling_factor 1.2 -> maliyet  90
+        # Bu yuzden inflation_radius'u buyutmek TEK BASINA yetmez;
+        # gradyanin o mesafeye kadar anlamli maliyet tasimasi icin
+        # cost_scaling_factor da dusurulur.
+        #
+        # Yan fayda: onceki deger (0.70) robotun circumscribed yaricapindan
+        # (0.9000) KUCUKTU; Nav2 yonelime bagli carpisma maliyetini
+        # circumscribed'a kadar dogru hesaplayabilmek icin
+        # inflation_radius >= circumscribed ister. 1.41 bu tutarsizligi kapatir.
+        #
+        # YUMUSAK kisittir: dar koridorda robot yine gecer, sadece pahali olur.
+        # Sert garanti istenirse footprint_padding kullanilmalidir (alan kaybi
+        # buyuk: gezilebilir alan 688 -> 430 m2).
+        cost_scaling_factor: 1.2
+        inflation_radius: 1.41      # 0.7025 (yari-genislik) + 0.70 (istenen pay)
+      # false: costmap'in TAMAMI yerine yalniz degisen bolge yayinlanir.
+      # global costmap test_map2'de 659x664 hucre; tamamini 1 Hz'de
+      # yayinlamak gereksiz DDS + RViz yuku (2026-08-25 CPU azaltmasi).
+      always_send_full_costmap: false
+
+# ══════════════ LOCAL COSTMAP ══════════════
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: true
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: base_footprint
+      rolling_window: true
+      width: 4
+      height: 4
+      resolution: 0.05
+      footprint: "[ [0.5625, 0.7025], [0.5625, -0.7025], [-0.5625, -0.7025], [-0.5625, 0.7025] ]"
+      plugins: ["obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          data_type: "LaserScan"
+          raytrace_max_range: 12.0
+          obstacle_max_range: 11.5
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        # A: duvarlardan YARIM ARAC GENISLIGI (0.70 m) uzak durma hedefi.
+        # Robot 1.125 x 1.405 m; yari-genislik 0.7025. Govde kenarindan
+        # 0.70 m bosluk istemek => merkez-engel mesafesi >= 1.405 m.
+        #
+        # Nav2 inflation maliyeti:  cost = 252 * exp(-cost_scaling_factor * (d - inscribed))
+        # inscribed = 0.5625 oldugundan d = 1.405'te:
+        #     cost_scaling_factor 3.0 -> maliyet  20  (neredeyse sifir, itmiyor)
+        #     cost_scaling_factor 1.5 -> maliyet  71
+        #     cost_scaling_factor 1.2 -> maliyet  90
+        # Bu yuzden inflation_radius'u buyutmek TEK BASINA yetmez;
+        # gradyanin o mesafeye kadar anlamli maliyet tasimasi icin
+        # cost_scaling_factor da dusurulur.
+        #
+        # Yan fayda: onceki deger (0.70) robotun circumscribed yaricapindan
+        # (0.9000) KUCUKTU; Nav2 yonelime bagli carpisma maliyetini
+        # circumscribed'a kadar dogru hesaplayabilmek icin
+        # inflation_radius >= circumscribed ister. 1.41 bu tutarsizligi kapatir.
+        #
+        # YUMUSAK kisittir: dar koridorda robot yine gecer, sadece pahali olur.
+        # Sert garanti istenirse footprint_padding kullanilmalidir (alan kaybi
+        # buyuk: gezilebilir alan 688 -> 430 m2).
+        cost_scaling_factor: 1.2
+        inflation_radius: 1.41      # 0.7025 (yari-genislik) + 0.70 (istenen pay)
+      # false: costmap'in TAMAMI yerine yalniz degisen bolge yayinlanir.
+      # global costmap test_map2'de 659x664 hucre; tamamini 1 Hz'de
+      # yayinlamak gereksiz DDS + RViz yuku (2026-08-25 CPU azaltmasi).
+      always_send_full_costmap: false
+
+map_server:
+  ros__parameters:
+    use_sim_time: true
+    # BURADAKI deger hicbir zaman kullanilmaz: localization.launch.py bunu
+    # environment profiline gore RewrittenYaml ile EZER. Placeholder ZORUNLU
+    # — RewrittenYaml var olmayan bir anahtari EKLEYEMEZ, yalniz var olani
+    # degistirebilir (headless testte "yaml_filename is not initialized"
+    # hatasiyla bulundu, bu satir olmadan map_server configure adiminda oluyordu).
+    yaml_filename: ""
+
+map_saver:
+  ros__parameters:
+    use_sim_time: true
+    save_map_timeout: 5.0
+    free_thresh_default: 0.25
+    occupied_thresh_default: 0.65
+
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: true
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.5, 0.5, 1.2]      # HOLONOMIC: [vx, vy, wtheta] - vy > 0; wz motor tavani 1.48 altinda
+    min_velocity: [-0.5, -0.5, -1.2]   # HOLONOMIC: yanal ve geri hareket
+    max_accel: [2.5, 2.5, 3.2]
+    max_decel: [-2.5, -2.5, -3.2]
+    odom_topic: "odometry/filtered"   # EKF ciktisi (CLOSED_LOOP secilirse kullanilir)
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0
+    # Giris/cikis topic'leri (cmd_vel_selected -> cmd_vel_smoothed) yaml'da degil,
+    # navigation.launch.py'de acikca remap edilir.
+
+# ══════════════ COLLISION MONITOR — son yazilimsal cmd_vel yayincisi ══════════════
+# Sema /opt/ros/humble/share/nav2_collision_monitor/params/collision_monitor_params.yaml
+# referans alinarak dogrulandi. cmd_vel_in/out topic'leri BURADA DEGIL,
+# navigation.launch.py'de remap edilir (cmd_vel_smoothed -> cmd_vel).
+#
+# Stop/slowdown poligonlari fren mesafesi ve hiz gercek aracta olculmeden
+# nihai degildir. Su anki degerler yalniz costmap footprint'i
+# (0.5625x0.7025 nominal_sim, teker collision kurelerinin dis zarfi dahil) etrafinda GUVENLI
+# TARAFTA kalan geometrik marjlardir; gercek fren mesafesi olculunce revize edilir.
+collision_monitor:
+  ros__parameters:
+    use_sim_time: true
+    base_frame_id: "base_footprint"
+    odom_frame_id: "odom"
+    # Zincirdeki yeri: Velocity Smoother -> Collision Monitor -> mecanum_drive_controller
+    # Son yazilimsal cmd_vel yayincisi budur.
+    cmd_vel_in_topic: "cmd_vel_smoothed"
+    cmd_vel_out_topic: "cmd_vel"
+    transform_tolerance: 0.2
+    source_timeout: 1.0
+    base_shift_correction: true
+    stop_pub_timeout: 2.0
+    polygons: ["PolygonStop", "PolygonSlow"]
+    PolygonStop:
+      type: "polygon"
+      # Robot dis zarfi +-0.5625 x +-0.7025. Guvenlik PAYI yariya indirildi
+      # (2026-08-24): eski 0.70x0.85 -> pay +0.1375/+0.1475; yeni 0.63x0.78
+      # -> pay +0.068/+0.078. Kose yaricapi 1.1011 -> 1.0006 m.
+      # Olculdu (katman1): yerinde donus guvenli alan %17 -> %26,
+      # duz surus icin uygun alan %37 -> %44.
+      # POLIGONU LITERAL YARIYA INDIRMEYIN: 0.35x0.43 robotun kendi
+      # zarfinin ICINDE kalir, engel robota carpmadan poligona giremez
+      # ve guvenlik katmani tamamen islevsizlesir.
+      points: [0.63, 0.78, 0.63, -0.78, -0.63, -0.78, -0.63, 0.78]
+      action_type: "stop"
+      max_points: 3
+      visualize: true
+      polygon_pub_topic: "polygon_stop"
+      enabled: true
+    PolygonSlow:
+      type: "polygon"
+      # Guvenlik PAYI yariya indirildi (2026-08-24): eski 1.00x1.15 ->
+      # pay +0.4375/+0.4475; yeni 0.78x0.93 -> pay +0.218/+0.228.
+      # Olculdu (katman1): yavaslamayan alan %16 -> %34.
+      # PolygonStop'tan (0.63x0.78) buyuk kalmalidir.
+      points: [0.78, 0.93, 0.78, -0.93, -0.78, -0.93, -0.78, 0.93]
+      action_type: "slowdown"
+      slowdown_ratio: 0.4
+      max_points: 3
+      visualize: true
+      polygon_pub_topic: "polygon_slowdown"
+      enabled: true
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "/scan"
+      enabled: true

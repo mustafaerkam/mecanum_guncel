@@ -1,0 +1,30 @@
+name: ROS 2 CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up ROS 2 Humble
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: humble
+
+      - name: Install dependencies, build and test
+        uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          target-ros2-distro: humble
+          package-name: |
+            mecanum_bringup
+            mecanum_control
+            mecanum_navigation
+            mecanum_robot_description
+            mecanum_simulation
+            mecanum_teleop
+            mecanum_testing

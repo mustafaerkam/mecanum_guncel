@@ -1,0 +1,12 @@
+<library path="mecanum_system_interface">
+  <class name="mecanum_control/MecanumSystemInterface"
+         type="mecanum_control::MecanumSystemInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Gercek mecanum robot icin hardware_interface::SystemInterface.
+      Teker hiz komutlarini ESP32 uzerinde calisan micro-ROS node'una
+      std_msgs/Float32MultiArray topic'i ile gonderir (USB seri + micro_ros_agent).
+      transport=mock ile donanimsiz test edilebilir.
+    </description>
+  </class>
+</library>

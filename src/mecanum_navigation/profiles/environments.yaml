@@ -1,0 +1,20 @@
+# Tek dogruluk kaynagi: world <-> map <-> nominal spawn pozu eslemesi.
+# simulation.launch.py (mecanum_simulation) VE localization.launch.py /
+# mapping.launch.py (mecanum_navigation) AYNI dosyayi okur; world/map
+# varsayilanlari iki ayri bagimsiz yerde tutulmaz.
+
+environments:
+  katman0:
+    world_file: "katman0_oda.sdf"          # mecanum_simulation/worlds
+    map_file: "katman0.yaml"               # mecanum_navigation/maps
+    # OLCULDU (2026-08-24): eski deger { x:-3.0, y:-3.0, z:0.15 } ROBOTU IKI
+    # DUVARIN ICINE dogurUYORDU. katman0_oda.sdf ic duvar yuzleri x,y = +-3.0
+    # (duvar pose +-3.075, kalinlik 0.15). Robot dis zarfi teker collision
+    # kureleri dahil +-0.5625 (x) x +-0.7025 (y):
+    #   wheel_offset_x 0.40 + wheel_radius 0.1625 = 0.5625
+    #   wheel_offset_y 0.54 + wheel_radius 0.1625 = 0.7025
+    # Yeni deger en dar payi 0.7975 m (kuzey duvari); sutun (1.2,-1.2, r=0.25)
+    # ile pay 2.68 m. z=0.02 yumusak oturma icin.
+    spawn_pose: { x: -1.5, y: 1.5, z: 0.02, yaw: 0.0 }
+
+default_environment: "katman0"

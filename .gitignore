@@ -1,0 +1,52 @@
+# ROS2 / colcon derleme çıktıları — makineye özgü, asla commit edilmez
+build/
+install/
+log/
+.colcon/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Gazebo / Ignition
+.ignition/
+.gazebo/
+*.log
+
+# Editör & sistem
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# rqt_tf_tree / view_frames debug çıktıları
+frames_*.gv
+frames_*.pdf
+
+# Kayıtlar (rosbag vb.) — büyük ikili dosyalar
+*.bag
+*.db3
+*.mcap
+
+# Yedek dosyalar
+*.bak
+*~
+
+# slam_toolbox serialize edilmis pose graph'lari (yuzlerce MB, koddan referanssiz)
+*.posegraph
+*.data
+
+# Yerel referanslar, çalışma notları ve test çıktıları
+/docs/
+/validation/
+/DECISIONS.md
+/MEASUREMENTS.md
+/VALIDATION_MATRIX.md
+/REPORT.md
+.pytest_cache/
+*.tmp
+core
+core.[0-9]*

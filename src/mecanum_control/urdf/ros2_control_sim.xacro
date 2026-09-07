@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Sim ros2_control blogu: gz_ros2_control uzerinden gazebo fizigini
+       hardware_interface::SystemInterface gibi gorunduren resmi plugin.
+       Gercek robotla AYNI dort joint command/state interface'i tanimlar;
+       yalniz <hardware><plugin> degisir (bkz. ros2_control_real.xacro). -->
+  <xacro:macro name="mecanum_ros2_control_sim" params="">
+    <ros2_control name="MecanumGazeboSystem" type="system">
+      <hardware>
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </hardware>
+      <joint name="wheel_fl_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="wheel_fr_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="wheel_rl_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="wheel_rr_joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+
+    <gazebo>
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>$(find mecanum_control)/config/mecanum_controllers_sim.yaml</parameters>
+        <!-- Controller node'lari controller_manager surecinin ICINDE olustugu icin
+             spawner'a verilen remap'lerin hicbir etkisi yok (headless testte
+             "Publisher count: 0" ile bulundu, spawner sadece servis cagirir,
+             controller node'unu OLUSTURMAZ). Process-genel remap burada,
+             ros blogunda tanimlanir; gz_ros2_control bunlari global remap
+             argumani olarak uygular (strings ile "remapping" sembolu dogrulandi). -->
+        <ros>
+          <remapping>mecanum_drive_controller/odometry:=wheel/odometry</remapping>
+          <remapping>mecanum_drive_controller/reference_unstamped:=cmd_vel</remapping>
+        </ros>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+</robot>
