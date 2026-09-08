@@ -9,22 +9,39 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up ROS 2 Humble
         uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: humble
 
-      - name: Install dependencies, build and test
-        uses: ros-tooling/action-ros-ci@v0.4
-        with:
-          target-ros2-distro: humble
-          package-name: |
-            mecanum_bringup
-            mecanum_control
-            mecanum_navigation
-            mecanum_robot_description
-            mecanum_simulation
-            mecanum_teleop
-            mecanum_testing
+      - name: Install package dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /opt/ros/humble/setup.bash
+          rosdep update --rosdistro humble
+          rosdep install \
+            --from-paths src \
+            --ignore-src \
+            --rosdistro humble \
+            -y
+
+      - name: Build workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /opt/ros/humble/setup.bash
+          colcon build \
+            --event-handlers console_cohesion+ \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+      - name: Test workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          source /opt/ros/humble/setup.bash
+          source install/setup.bash
+          colcon test --event-handlers console_cohesion+
+          colcon test-result --verbose
