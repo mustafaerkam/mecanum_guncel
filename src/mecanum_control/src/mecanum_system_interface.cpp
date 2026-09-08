@@ -98,9 +98,9 @@ bool MicroRosTransport::open()
   // komut 20 ms sonra zaten yenisiyle gecersizlesir, reliable ise micro-ROS
   // XRCE akisinda yeniden gonderim ve tampon baskisi yaratir. Tek atimlik veri
   // olmadigi icin guvenilirlikten kazanc yoktur.
-  const auto qos = config_.best_effort_qos
-    ? rclcpp::QoS(rclcpp::KeepLast(1)).best_effort()
-    : rclcpp::QoS(rclcpp::KeepLast(1)).reliable();
+  const auto qos = config_.best_effort_qos ?
+    rclcpp::QoS(rclcpp::KeepLast(1)).best_effort() :
+    rclcpp::QoS(rclcpp::KeepLast(1)).reliable();
 
   command_publisher_ =
     node_->create_publisher<std_msgs::msg::Float32MultiArray>(config_.command_topic, qos);

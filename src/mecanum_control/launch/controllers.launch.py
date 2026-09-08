@@ -1,6 +1,7 @@
 """
-Var olan controller_manager'a joint_state_broadcaster ve mecanum_drive_controller'i
-spawn eder. controller_manager'i KENDI BASINA baslatmaz:
+Var olan controller_manager'a controller'lari sirayla yukler.
+
+controller_manager'i KENDI BASINA baslatmaz:
   - Simde: gz_ros2_control plugin'i (sim_robot.xacro) controller_manager'i Gazebo
     icinde kendisi olusturur.
   - Gercekte: real_hardware.launch.py (mecanum_bringup) ayri bir
@@ -19,13 +20,10 @@ Kullanim:
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    use_sim_time = LaunchConfiguration('use_sim_time')
-
     joint_state_broadcaster_spawner = Node(
         package='controller_manager',
         executable='spawner',
