@@ -19,8 +19,8 @@ jobs:
       - name: Install package dependencies
         shell: bash
         run: |
-          set -euo pipefail
           source /opt/ros/humble/setup.bash
+          set -euo pipefail
           rosdep update --rosdistro humble
           rosdep install \
             --from-paths src \
@@ -31,8 +31,8 @@ jobs:
       - name: Build workspace
         shell: bash
         run: |
-          set -euo pipefail
           source /opt/ros/humble/setup.bash
+          set -euo pipefail
           colcon build \
             --event-handlers console_cohesion+ \
             --cmake-args -DCMAKE_BUILD_TYPE=Release
@@ -40,8 +40,8 @@ jobs:
       - name: Test workspace
         shell: bash
         run: |
-          set -euo pipefail
           source /opt/ros/humble/setup.bash
           source install/setup.bash
+          set -euo pipefail
           colcon test --event-handlers console_cohesion+
           colcon test-result --verbose
