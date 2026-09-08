@@ -7,26 +7,28 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-22.04
+    # Keep ROS dependencies isolated from the runner's preinstalled LLVM/libunwind.
+    container: ros:humble-ros-base-jammy
+    timeout-minutes: 30
+    env:
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Check out source
         uses: actions/checkout@v5
-
-      - name: Set up ROS 2 Humble
-        uses: ros-tooling/setup-ros@v0.7
-        with:
-          required-ros-distributions: humble
 
       - name: Install package dependencies
         shell: bash
         run: |
           source /opt/ros/humble/setup.bash
           set -euo pipefail
+          apt-get update
           rosdep update --rosdistro humble
           rosdep install \
             --from-paths src \
             --ignore-src \
             --rosdistro humble \
             -y
+          rosdep check --from-paths src --ignore-src --rosdistro humble
 
       - name: Build workspace
         shell: bash
